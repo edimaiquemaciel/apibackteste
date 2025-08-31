@@ -1,21 +1,40 @@
 package vortex.backend.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import vortex.backend.security.SecurityFilter; // IMPORTAÇÃO NECESSÁRIA
+
 import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Autowired
+    private SecurityFilter securityFilter; // INJETA O NOSSO FILTRO
+
+    // Endpoints públicos que não precisam de autenticação
+    private static final String[] PUBLIC_ENDPOINTS = {
+            "/auth/**",
+            "/usuarios/cadastrar",
+            "/h2-console/**",
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html"
+    };
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -23,25 +42,23 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // 1. Habilita a configuração de CORS que definimos abaixo
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            
-            // 2. Desabilita o CSRF
             .csrf(csrf -> csrf.disable())
-            
-            // 3. Define a política de sessão como STATELESS
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            
-            // 4. Configura as regras de autorização para os endpoints
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/api/usuarios/cadastrar").permitAll()
-                .requestMatchers("/h2-console/**").permitAll() // Permite acesso ao console H2
+                .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                 .anyRequest().authenticated()
-            );
+            )
+            // ADICIONA NOSSO FILTRO NA CADEIA DE SEGURANÇA
+            .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // Permite que o H2 Console seja exibido em um frame no navegador
         http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
 
         return http.build();
@@ -50,22 +67,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
-        // 5. Defina aqui a origem do seu front-end
         configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:3000", // React
-            "http://localhost:4200", // Angular
-            "http://localhost:5173"  // Vite
+            "http://localhost:3000", "http://localhost:4200", "http://localhost:5173"
         ));
-        
-        // Permite todos os métodos (GET, POST, PUT, DELETE, etc.)
-        configuration.setAllowedMethods(Arrays.asList("*")); 
-        
-        // Permite todos os cabeçalhos
-        configuration.setAllowedHeaders(Arrays.asList("*")); 
+        configuration.setAllowedMethods(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Aplica a configuração para todos os endpoints
+        source.registerCorsConfiguration("/**", configuration);
         
         return source;
     }

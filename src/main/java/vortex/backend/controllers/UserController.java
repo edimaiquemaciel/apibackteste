@@ -1,17 +1,21 @@
 package vortex.backend.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import vortex.backend.dto.UserProfileDTO;
+import vortex.backend.dto.UserUpdateDTO;
 import vortex.backend.entities.User;
 import vortex.backend.services.UserService;
 
 @RestController
-@RequestMapping("/api/usuarios")
+@RequestMapping("/usuarios")
 public class UserController {
 
     private final UserService userService;
@@ -31,4 +35,22 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
+
+    @GetMapping("/perfil")
+    public ResponseEntity<UserProfileDTO> getLoggedUserProfile() {
+        try {
+            UserProfileDTO userProfile = userService.getLoggedUserProfile();
+            return ResponseEntity.ok(userProfile);
+        } catch (IllegalStateException e) {
+            // Retorna 401 Unauthorized se não houver usuário logado
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    @PutMapping("/perfil")
+    public ResponseEntity<UserProfileDTO> updateUserProfile(@RequestBody UserUpdateDTO updateData) {
+        UserProfileDTO updatedProfile = userService.updateUserProfile(updateData);
+        return ResponseEntity.ok(updatedProfile);
+    }
+    
 }
