@@ -98,8 +98,6 @@
       <artifactId>spring-security-test</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <!-- DEPENDÊNCIAS DO FLYWAY MOVIDAS PARA O LUGAR CORRETO -->
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
