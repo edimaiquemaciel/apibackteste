@@ -1,6 +1,6 @@
 # Estágio 1: Build da aplicação com Maven
-# Usamos uma imagem que já vem com JDK e Maven para compilar o projeto
-FROM maven:3.9.8-eclipse-temurin-21-alpine AS build
+FROM maven:3-eclipse-temurin-21-alpine AS build
+
 
 # Define o diretório de trabalho dentro do container
 WORKDIR /app
@@ -18,7 +18,6 @@ COPY src ./src
 RUN mvn package -DskipTests
 
 # Estágio 2: Criação da imagem final
-# Usamos uma imagem base leve, apenas com o Java Runtime
 FROM eclipse-temurin:21-jre-alpine
 
 # Define o diretório de trabalho
@@ -27,7 +26,7 @@ WORKDIR /app
 # Copia o arquivo .jar gerado no estágio de build para a imagem final
 COPY --from=build /app/target/backend-0.0.1-SNAPSHOT.jar app.jar
 
-# Expõe a porta 8080 para que possamos acessar a aplicação de fora do container
+# Expõe a porta 8080
 EXPOSE 8080
 
 # Comando para executar a aplicação quando o container iniciar

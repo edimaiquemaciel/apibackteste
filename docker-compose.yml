@@ -1,29 +1,39 @@
-version: '3.8'
-
 services:
-  # Serviço da nossa aplicação Spring Boot
-  backend:
-    build: . # Constrói a imagem usando o Dockerfile na pasta atual
-    container_name: vortex-backend-app
-    ports:
-      - "8080:8080" # Mapeia a porta 8080 do container para a porta 8080 da sua máquina
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod # Ativa o perfil de produção para conectar ao PostgreSQL
-    depends_on:
-      - postgres-db # Garante que o banco de dados inicie antes da aplicação
-
-  # Serviço do banco de dados PostgreSQL
   postgres-db:
-    image: postgres:16-alpine # Usa uma imagem oficial e leve do PostgreSQL
+    image: postgres:16-alpine
     container_name: vortex-postgres-db
-    ports:
-      - "5432:5432" # Mapeia a porta do PostgreSQL para sua máquina (útil para debug)
     environment:
-      - POSTGRES_USER=postgres # Corresponde ao username no application-prod.properties
-      - POSTGRES_PASSWORD=admin123 # Corresponde à senha no application-prod.properties
-      - POSTGRES_DB=vortex_db # Corresponde ao nome do banco no application-prod.properties
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: .
+    container_name: vortex-backend-app
+    env_file:
+      - .env
+    # ADICIONADO: Esta seção garante que as variáveis do .env sejam passadas para o Spring
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
 
 volumes:
-  postgres-data: # Cria um volume para persistir os dados do banco mesmo que o container seja removido
+  postgres-data:
