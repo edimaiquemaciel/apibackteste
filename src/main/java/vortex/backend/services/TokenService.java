@@ -15,7 +15,6 @@ import java.util.Date;
 @Service
 public class TokenService {
 
-    // As propriedades agora são 'final' porque são definidas no construtor e não mudam mais
     private final String jwtSecret;
     private final long jwtExpiration;
 

@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   postgres-db:
     image: postgres:16-alpine
@@ -21,14 +23,6 @@ services:
     container_name: vortex-backend-app
     env_file:
       - .env
-    # ADICIONADO: Esta seção garante que as variáveis do .env sejam passadas para o Spring
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
-      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
-      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
-      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
     depends_on:
       postgres-db:
         condition: service_healthy
